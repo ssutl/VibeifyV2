@@ -1,6 +1,7 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import SpotifyWebAPI from "../../spotify-web-api-js";
-import TSNE from "tsne-js";
+
+
 
 type Props = {};
 
@@ -20,22 +21,11 @@ const featureNames = [
   "valence",
 ] as const;
 
-let model = new TSNE({
-  dim: 2,
-  perplexity: 30.0,
-  earlyExaggeration: 4.0,
-  learningRate: 100.0,
-  nIter: 1000,
-  metric: "euclidean",
-});
-
 export default function Main({}: Props) {
   const [spotifyToken, setSpotifyToken] = useState("");
   const [everyTrack, setEveryTrack] = useState<SpotifyApi.TrackObjectFull[]>(
     []
   );
-  const url = "https://accounts.spotify.com/en/logout";
-
   const [everyTrackLoaded, setEveryTrackLoaded] = useState(false);
   const [audioFeatures, setAudioFeatures] = useState<
     SpotifyApi.AudioFeaturesObject[]
@@ -45,6 +35,22 @@ export default function Main({}: Props) {
     SpotifyApi.TrackObjectFullConAudioFeatures[]
   >([]);
   const spotify = new SpotifyWebAPI();
+  const [tsneResult, setTsneResult] = useState<number[][]>([]);
+  const workerRef = useRef<Worker>();
+
+  useEffect(() => {
+    workerRef.current = new Worker(new URL("../../worker.ts", import.meta.url));
+    workerRef.current.onmessage = (event: MessageEvent<number[][]>) =>{
+      if(event.data.length){
+        setTsneResult(event.data)
+        alert(`Got data`);
+      }
+    }
+    return () => {
+      workerRef.current?.terminate();
+    };
+  }, []);
+
 
   const getTokenFromUrl = () => {
     const accessTokenIndex = window.location.href.indexOf("access_token=");
@@ -205,26 +211,21 @@ export default function Main({}: Props) {
         );
       });
 
-      console.log(non_reduced_coordinate_array);
-
-      model.init({
-        data: non_reduced_coordinate_array,
-        type: "dense",
-      });
-
-      let [error1, iter1] = model.run();
-
-      // `output` is unpacked ndarray (regular nested javascript array)
-      let output = model.getOutput();
-      console.log("output", output);
+      workerRef.current?.postMessage(non_reduced_coordinate_array);
     }
   }, [completeArray]);
 
-  if (!completeArray) return <div>Loading...</div>;
+
+
+  if (!completeArray || !tsneResult.length) return <div>Loading...</div>;
 
   return (
     <div>
-      <h1>Ready to visualise</h1>
+      {tsneResult && (
+        <div>
+          <h2>t-SNE Result</h2>
+        </div>
+      )}
     </div>
   );
 }
