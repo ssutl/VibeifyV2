@@ -2,16 +2,20 @@ import SpotifyWebAPI from "../../spotify-web-api-js";
 var spotify = new SpotifyWebAPI();
 
 export const loadSequence = async () => {
-  const getEverySingleTrackEver = async () => {
-    const promises: Promise<any>[] = [];
+  const getEverySingleTrackEver = async (): Promise<
+    SpotifyApi.TrackObjectFull[]
+  > => {
     let allTracks: SpotifyApi.TrackObjectFull[] = [];
+    const playlists = await spotify.getUserPlaylists();
+    const promises: Promise<any>[] = [];
 
-    spotify.getUserPlaylists().then((playlists) => {
+    await Promise.all(
       playlists.items
         .filter((eachPlaylist) => eachPlaylist.tracks.total !== 0)
-        .forEach((eachPlaylist) => {
+        .map(async (eachPlaylist) => {
           const totalTrackCount = eachPlaylist.tracks.total;
           let currentTrackCount = 0;
+
           while (currentTrackCount < totalTrackCount) {
             promises.push(
               spotify
@@ -31,16 +35,16 @@ export const loadSequence = async () => {
             );
             currentTrackCount += 100;
           }
-        });
-    });
+        })
+    );
 
-    Promise.all(promises);
+    await Promise.all(promises);
     return allTracks;
   };
 
   const getEveryAudioFeature = async (
     everyTrack: SpotifyApi.TrackObjectFull[]
-  ) => {
+  ): Promise<SpotifyApi.AudioFeaturesObject[]> => {
     let bottomPointer = 0;
     let topPointer = 100;
     const promises: Promise<any>[] = [];
@@ -60,12 +64,9 @@ export const loadSequence = async () => {
 
       bottomPointer += 100;
       topPointer += 100;
-      if (topPointer > everyTrack.length) {
-        topPointer = everyTrack.length;
-      }
     }
 
-    Promise.all(promises);
+    await Promise.all(promises);
     return audioFeatureArray;
   };
 
@@ -101,8 +102,9 @@ export const loadSequence = async () => {
   const token = await getTokenFromUrl();
   spotify.setAccessToken(token);
 
-  const tracks = await getEverySingleTrackEver();
-  const audioFeatures = await getEveryAudioFeature(tracks);
+  const tracks: SpotifyApi.TrackObjectFull[] = await getEverySingleTrackEver();
+  const audioFeatures: SpotifyApi.AudioFeaturesObject[] =
+    await getEveryAudioFeature(tracks);
 
   return mergeArrays(tracks, audioFeatures);
 };
