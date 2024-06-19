@@ -1,9 +1,36 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import SpotifyWebAPI from "../../spotify-web-api-js";
 import TSNE from "tsne-js";
 var spotify = new SpotifyWebAPI();
 
 type Props = {};
+
+const featureNames = [
+  "acousticness",
+  "danceability",
+  "duration_ms",
+  "energy",
+  "instrumentalness",
+  "key",
+  "liveness",
+  "loudness",
+  "mode",
+  "speechiness",
+  "tempo",
+  "time_signature",
+  "valence",
+] as const;
+
+let model = new TSNE({
+  dim: 2,
+  perplexity: 30.0,
+  earlyExaggeration: 4.0,
+  learningRate: 100.0,
+  nIter: 1000,
+  metric: "euclidean",
+});
+
+const RATE_LIMIT_DELAY = 1000; // 1 second delay between requests
 
 export default function Main({}: Props) {
   const [spotifyToken, setSpotifyToken] = useState("");
@@ -14,8 +41,7 @@ export default function Main({}: Props) {
     SpotifyApi.AudioFeaturesObject[]
   >([]);
   const [allAudioFeaturesLoaded, setAllAudioFeaturesLoaded] = useState(false);
-  const [mergedArray, setmergedArray] =
-    useState<SpotifyApi.TrackObjectFull[]>();
+  const [mergedArray, setMergedArray] = useState<any[]>([]); // Updated type
 
   const getTokenFromUrl = () => {
     const accessTokenIndex = window.location.href.indexOf("access_token=");
@@ -28,25 +54,32 @@ export default function Main({}: Props) {
     setSpotifyToken(accessToken);
   };
 
+  const processQueue = async (queue: any[], delay: number) => {
+    for (const request of queue) {
+      await request();
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  };
+
   const getEverySingleTrack = async () => {
     spotify.getUserPlaylists().then((playlists) => {
       const promises: any[] = [];
       playlists.items
         .filter((eachPlaylist) => eachPlaylist.tracks.total !== 0)
-        .map((eachPlaylist) => {
-          //Getting all songs in your playlist
+        .forEach((eachPlaylist) => {
+          // Getting all songs in your playlist
           const totalTrackCount = eachPlaylist.tracks.total;
           let currentTrackCount = 0;
           while (currentTrackCount < totalTrackCount) {
-            //Creating a promise for each 100 songs in the playlist
-            promises.push(
+            // Creating a promise for each 100 songs in the playlist
+            promises.push(() =>
               spotify
                 .getPlaylistTracks(eachPlaylist.id, {
                   limit: 100,
                   offset: currentTrackCount,
                 })
                 .then((tracks) => {
-                  tracks.items.map((eachTrack) => {
+                  tracks.items.forEach((eachTrack) => {
                     setAllTracks((allTracks: any) => [
                       ...allTracks,
                       eachTrack.track,
@@ -58,8 +91,8 @@ export default function Main({}: Props) {
           }
         });
 
-      //Now we wait for all promises to be resolved
-      Promise.all(promises).then(() => {
+      // Process the queue with rate limiting
+      processQueue(promises, RATE_LIMIT_DELAY).then(() => {
         // All elements have been added to the allTracks array
         setAllTracksLoaded(true);
       });
@@ -77,7 +110,7 @@ export default function Main({}: Props) {
 
     while (bottomPointer < allTracks.length) {
       const chunk = stringArray.slice(bottomPointer, topPointer);
-      promises.push(
+      promises.push(() =>
         spotify.getAudioFeaturesForTracks(chunk).then((results) => {
           setAllAudioFeatures((audioFeatures) => [
             ...audioFeatures,
@@ -93,7 +126,8 @@ export default function Main({}: Props) {
       }
     }
 
-    Promise.all(promises).then(() => {
+    // Process the queue with rate limiting
+    processQueue(promises, RATE_LIMIT_DELAY).then(() => {
       // All elements have been added to the allTracks array
       setAllAudioFeaturesLoaded(true);
     });
@@ -131,20 +165,71 @@ export default function Main({}: Props) {
           };
         });
 
-      const non_reduced_coordinate_array = mergedArray.map((eachTrack) => {
-        if (!eachTrack.audioFeatures) return;
+      // Need to transform all the audio features from their default range to a range of 0-1. so each feature is comparable and contributes equally to the distance calculation
+      type FeatureName = (typeof featureNames)[number]; // Create a type from the array elements
+
+      const featureRanges: {
+        [key in FeatureName]: { min: number; max: number };
+      } = {} as { [key in FeatureName]: { min: number; max: number } };
+
+      featureNames.forEach((eachFeature) => {
+        const certainFeatureArray: any[] = mergedArray
+          .filter((eachTrack) => eachTrack.audioFeatures)
+          .map((eachTrack) => eachTrack.audioFeatures[eachFeature])
+          .filter((eachValue) => typeof eachValue === "number");
+
+        featureRanges[eachFeature] = {
+          min: Math.min(...certainFeatureArray),
+          max: Math.max(...certainFeatureArray),
+        };
+      });
+
+      const normalisedArray = mergedArray
+        .filter((eachTrack) => eachTrack.audioFeatures)
+        .map((eachTrack) => {
+          const normalisedAudioFeatures: {
+            [key in FeatureName]: number;
+          } = {} as { [key in FeatureName]: number };
+
+          featureNames.forEach((eachFeature) => {
+            normalisedAudioFeatures[eachFeature] =
+              (eachTrack.audioFeatures[eachFeature] -
+                featureRanges[eachFeature].min) /
+              (featureRanges[eachFeature].max - featureRanges[eachFeature].min);
+          });
+
+          return {
+            ...eachTrack,
+            audioFeatures: normalisedAudioFeatures,
+          };
+        });
+
+      const non_reduced_coordinate_array = normalisedArray.map((eachTrack) => {
         return Object.values(eachTrack.audioFeatures).filter(
           (eachValue) => typeof eachValue === "number"
         );
       });
 
-      console.log(non_reduced_coordinate_array);
+      model.init({
+        data: non_reduced_coordinate_array,
+        type: "dense",
+      });
 
-      setmergedArray(mergedArray);
+      let [error, iter] = model.run();
+
+      // rerun without re-calculating pairwise distances, etc.
+      let [error1, iter1] = model.rerun();
+
+      // `output` is unpacked ndarray (regular nested javascript array)
+      let output = model.getOutput();
+
+      // `outputScaled` is `output` scaled to a range of [-1, 1]
+      let outputScaled = model.getOutputScaled();
+      console.log("outputScaled", outputScaled);
     }
   }, [allAudioFeaturesLoaded, allTracksLoaded]);
 
-  if (!mergedArray) return <div>Loading...</div>;
+  if (!mergedArray.length) return <div>Loading...</div>;
 
   return (
     <div>

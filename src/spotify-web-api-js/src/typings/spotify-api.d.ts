@@ -851,6 +851,7 @@ declare namespace SpotifyApi {
     type: 'audio_features';
     uri: string;
     valence: number;
+    [key: string]: number | string;  // Index signature
   }
 
   /**
