@@ -1067,7 +1067,12 @@ declare namespace SpotifyApi {
     album: AlbumObjectSimplified;
     external_ids: ExternalIdObject;
     popularity: number;
-    audioFeatures?:AudioFeaturesObject
+  }
+  interface TrackObjectFullConAudioFeatures extends TrackObjectSimplified {
+    album: AlbumObjectSimplified;
+    external_ids: ExternalIdObject;
+    popularity: number;
+    audioFeatures:AudioFeaturesObject
   }
 
   /**
