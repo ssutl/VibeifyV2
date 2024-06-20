@@ -20,6 +20,7 @@
     "spotify-web-api-js": "^1.5.2",
     "subworkers": "^1.0.1",
     "tsne-js": "^1.0.3",
+    "umap-js": "^1.4.0",
     "worker-loader": "^3.0.8"
   },
   "devDependencies": {
