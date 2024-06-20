@@ -29,12 +29,13 @@ export default async function getEveryTrack(spotify: SpotifyWebApi.SpotifyWebApi
 
           currentTrackCount += 100;
           resolve();
-        }, 1000); // Delay between each batch
+        }, 500); // Delay between each batch
       });
     }
   }
 
-  console.log(allTracks);
+  //Just removing those sideloaded tracks
+  const cleanedTracks = allTracks.filter((eachTrack) => eachTrack.album.images[0]);
 
-  return allTracks;
+  return cleanedTracks;
 }
