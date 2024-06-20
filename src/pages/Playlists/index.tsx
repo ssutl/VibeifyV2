@@ -1,64 +1,27 @@
-import React, { useRef, useEffect, useState, useCallback } from "react";
-import SpotifyWebAPI from "../../spotify-web-api-js";
+import React, { useState, useEffect } from "react";
+import SpotifyWebApi from "../../spotify-web-api-js";
+import * as tf from "@tensorflow/tfjs";
+import { tsne } from "@tensorflow/tfjs-tsne";
+import { Scatter } from "react-chartjs-2";
+import "chart.js/auto";
 
+const featureNames = ["acousticness", "danceability", "duration_ms", "energy", "instrumentalness", "key", "liveness", "loudness", "mode", "speechiness", "tempo", "time_signature", "valence"] as const;
 
-
-type Props = {};
-
-const featureNames = [
-  "acousticness",
-  "danceability",
-  "duration_ms",
-  "energy",
-  "instrumentalness",
-  "key",
-  "liveness",
-  "loudness",
-  "mode",
-  "speechiness",
-  "tempo",
-  "time_signature",
-  "valence",
-] as const;
-
-export default function Main({}: Props) {
+export default function Main() {
   const [spotifyToken, setSpotifyToken] = useState("");
-  const [everyTrack, setEveryTrack] = useState<SpotifyApi.TrackObjectFull[]>(
-    []
-  );
+  const [everyTrack, setEveryTrack] = useState<SpotifyApi.TrackObjectFull[]>([]);
   const [everyTrackLoaded, setEveryTrackLoaded] = useState(false);
-  const [audioFeatures, setAudioFeatures] = useState<
-    SpotifyApi.AudioFeaturesObject[]
-  >([]);
+  const [audioFeatures, setAudioFeatures] = useState<SpotifyApi.AudioFeaturesObject[]>([]);
   const [audioFeaturesLoaded, setAudioFeaturesLoaded] = useState(false);
-  const [completeArray, setCompleteArray] = useState<
-    SpotifyApi.TrackObjectFullConAudioFeatures[]
-  >([]);
-  const spotify = new SpotifyWebAPI();
-  const [tsneResult, setTsneResult] = useState<number[][]>([]);
-  const workerRef = useRef<Worker>();
-
-  useEffect(() => {
-    workerRef.current = new Worker(new URL("../../worker.ts", import.meta.url));
-    workerRef.current.onmessage = (event: MessageEvent<number[][]>) =>{
-      if(event.data.length){
-        setTsneResult(event.data)
-        alert(`Got data`);
-      }
-    }
-    return () => {
-      workerRef.current?.terminate();
-    };
-  }, []);
-
+  const [completeArray, setCompleteArray] = useState<SpotifyApi.TrackObjectFullConAudioFeatures[]>();
+  const [coordinates, setCoordinates] = useState<any[]>([]);
+  console.log("coordinates", coordinates);
+  const spotify = new SpotifyWebApi();
 
   const getTokenFromUrl = () => {
     const accessTokenIndex = window.location.href.indexOf("access_token=");
     const ampIndex = window.location.href.indexOf("&", accessTokenIndex);
-    const accessToken = window.location.href.substring(
-      accessTokenIndex + "access_token=".length,
-      ampIndex
-    );
+    const accessToken = window.location.href.substring(accessTokenIndex + "access_token=".length, ampIndex);
     setSpotifyToken(accessToken);
   };
 
@@ -88,10 +51,7 @@ export default function Main({}: Props) {
                   })
                   .then((tracks) => {
                     tracks.items.map((eachTrack) => {
-                      setEveryTrack((everyTrack: any) => [
-                        ...everyTrack,
-                        eachTrack.track,
-                      ]);
+                      setEveryTrack((everyTrack: any) => [...everyTrack, eachTrack.track]);
                     });
                   })
               );
@@ -114,18 +74,13 @@ export default function Main({}: Props) {
       let topPointer = 100;
       const promises = [];
 
-      const stringArray = everyTrack
-        .filter((eachTrack) => eachTrack !== null)
-        .map((eachTrack) => eachTrack.id);
+      const stringArray = everyTrack.filter((eachTrack) => eachTrack !== null).map((eachTrack) => eachTrack.id);
 
       while (bottomPointer < everyTrack.length) {
         const chunk = stringArray.slice(bottomPointer, topPointer);
         promises.push(
           spotify.getAudioFeaturesForTracks(chunk).then((results) => {
-            setAudioFeatures((audioFeatures) => [
-              ...audioFeatures,
-              ...results.audio_features,
-            ]);
+            setAudioFeatures((audioFeatures) => [...audioFeatures, ...results.audio_features]);
           })
         );
 
@@ -148,83 +103,93 @@ export default function Main({}: Props) {
       const mergedArray = everyTrack
         .filter((eachTrack) => eachTrack !== null)
         .map((obj1) => {
-          const obj2 = audioFeatures
-            .filter((eachAudioFeature) => eachAudioFeature !== null)
-            .find((o) => o.id === obj1.id);
-
-          if (!obj2) return;
-
+          const obj2 = audioFeatures.filter((eachAudioFeature) => eachAudioFeature !== null).find((o) => o.id === obj1.id);
           return { ...obj1, audioFeatures: obj2 };
         })
-        .filter((eachTrack) => eachTrack !== undefined); // Filter out undefined elements
+        .filter((eachTrack): eachTrack is SpotifyApi.TrackObjectFullConAudioFeatures => eachTrack !== null)
+        .filter((eachTrack) => eachTrack.audioFeatures !== undefined);
 
-      setCompleteArray(
-        mergedArray as SpotifyApi.TrackObjectFullConAudioFeatures[]
-      ); // Cast to the correct type
+      setCompleteArray(mergedArray);
     }
   }, [audioFeaturesLoaded, everyTrackLoaded]);
 
   useEffect(() => {
     if (completeArray) {
-      //Need to transform all the audio features from their default range to a range of 0-1. so each feature is comparable and contributes equally to the distance calculation
-      type FeatureName = (typeof featureNames)[number]; // Create a type from the array elements
-
       const featureRanges: {
-        [key in FeatureName]: { min: number; max: number };
-      } = {} as { [key in FeatureName]: { min: number; max: number } };
+        [key in (typeof featureNames)[number]]: { min: number; max: number };
+      } = {} as any;
 
-      featureNames.map((eachFeature) => {
-        const certainFeatureArray: any[] = completeArray
+      featureNames.forEach((feature) => {
+        const values = completeArray
           .filter((eachTrack) => eachTrack.audioFeatures !== undefined)
-          .map((eachTrack) => eachTrack.audioFeatures[eachFeature])
-          .filter((eachValue) => typeof eachValue === "number");
-
-        featureRanges[eachFeature] = {
-          min: Math.min(...certainFeatureArray),
-          max: Math.max(...certainFeatureArray),
+          .map((track) => track.audioFeatures[feature])
+          .filter((value) => typeof value === "number");
+        featureRanges[feature] = {
+          min: Math.min(...values),
+          max: Math.max(...values),
         };
       });
 
       const normalisedArray = completeArray
-        .filter((eachTrack) => eachTrack.audioFeatures)
-        .map((eachTrack) => {
+        .filter((eachTrack) => eachTrack.audioFeatures !== undefined)
+        .map((track) => {
           const normalisedAudioFeatures: {
-            [key in FeatureName]: number;
-          } = {} as { [key in FeatureName]: number };
+            [key in (typeof featureNames)[number]]: number;
+          } = {} as any;
 
-          featureNames.map((eachFeature) => {
-            normalisedAudioFeatures[eachFeature] =
-              (eachTrack.audioFeatures[eachFeature] -
-                featureRanges[eachFeature].min) /
-              (featureRanges[eachFeature].max - featureRanges[eachFeature].min);
+          featureNames.forEach((feature) => {
+            normalisedAudioFeatures[feature] = (track.audioFeatures[feature] - featureRanges[feature].min) / (featureRanges[feature].max - featureRanges[feature].min);
           });
 
           return {
-            ...eachTrack,
+            ...track,
             audioFeatures: normalisedAudioFeatures,
           };
         });
 
-      const non_reduced_coordinate_array = normalisedArray.map((eachTrack) => {
-        return Object.values(eachTrack.audioFeatures).filter(
-          (eachValue) => typeof eachValue === "number"
-        );
-      });
+      const non_reduced_coordinate_array = normalisedArray.map((track) => Object.values(track.audioFeatures).filter((value) => typeof value === "number"));
 
-      workerRef.current?.postMessage(non_reduced_coordinate_array);
+      // Convert the data to a TensorFlow tensor
+      const dataTensor = tf.tensor2d(non_reduced_coordinate_array.slice(0, 100));
+
+      // Initialize the TSNE optimizer
+      const tsneOpt = tsne(dataTensor);
+
+      tsneOpt.compute().then(async () => {
+        // tsne.coordinate returns a *tensor* with x, y coordinates of
+        // the embedded data.
+        const coordinatesArray = await tsneOpt.coordsArray();
+        setCoordinates(coordinatesArray);
+      });
     }
   }, [completeArray]);
 
-
-
-  if (!completeArray || !tsneResult.length) return <div>Loading...</div>;
-
   return (
     <div>
-      {tsneResult && (
-        <div>
-          <h2>t-SNE Result</h2>
-        </div>
+      {coordinates.length > 0 && (
+        <Scatter
+          data={{
+            datasets: [
+              {
+                label: "t-SNE Embedding",
+                data: coordinates.map((coord) => ({ x: coord[0], y: coord[1] })),
+                backgroundColor: "rgba(75,192,192,1)",
+              },
+            ],
+          }}
+          options={{
+            scales: {
+              x: {
+                type: "linear",
+                position: "bottom",
+              },
+              y: {
+                type: "linear",
+                position: "left",
+              },
+            },
+          }}
+        />
       )}
     </div>
   );

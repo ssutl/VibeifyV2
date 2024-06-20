@@ -3,5 +3,8 @@
   "editor.wordWrap": "wordWrapColumn",
   "editor.wordWrapColumn": 160,
   "prettier.printWidth": 200,
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.defaultFormatter": null,
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }
