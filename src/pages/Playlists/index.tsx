@@ -14,7 +14,7 @@ export default function Main() {
   const UMAPFITTING = async (data: number[][], allTracks: SpotifyApi.TrackObjectFull[]) => {
     const umap = new UMAP({
       nComponents: 3,
-      spread: 1.5, // Increase spread to disperse points more
+      spread: 1.2, // Increase spread to disperse points more
       minDist: 0.1, // You can adjust this as needed
     });
     const embeddings = await umap.fitAsync(data);
@@ -23,7 +23,8 @@ export default function Main() {
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
     const renderer = new THREE.WebGLRenderer();
 
-    renderer.setSize(window.innerWidth / 2, window.innerHeight / 2);
+    renderer.setPixelRatio(window.devicePixelRatio); // Reduce pixel ratio
+    renderer.setSize(window.innerWidth, window.innerHeight);
     bodyRef.current?.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -33,7 +34,7 @@ export default function Main() {
     controls.maxPolarAngle = Math.PI / 2;
 
     const loader = new THREE.TextureLoader();
-    const sprites = embeddings.map((embedding, index) => {
+    const sprites = embeddings.slice(0, 400).map((embedding, index) => {
       const track = allTracks[index];
       const texture = loader.load(track.album.images[0].url);
       const material = new THREE.SpriteMaterial({ map: texture });
@@ -43,7 +44,7 @@ export default function Main() {
       return sprite;
     });
 
-    sprites.forEach((sprite) => scene.add(sprite));
+    sprites.slice(0, 400).forEach((sprite) => scene.add(sprite));
     camera.position.z = 50;
 
     const animate = () => {
