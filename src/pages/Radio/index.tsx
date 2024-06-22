@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import SpotifyWebApi from "../../spotify-web-api-js";
 import { UMAP } from "umap-js";
 import getEveryTrack from "../../Functions/getEveryTrack";
@@ -10,6 +10,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 export default function Main() {
   const spotify = new SpotifyWebApi();
   const bodyRef = useRef<HTMLDivElement>(null);
+  const [currentlyPlayingTrack, setCurrentlyPlayingTrack] = useState<SpotifyApi.TrackObjectFull | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const UMAPFITTING = async (data: number[][], allTracks: SpotifyApi.TrackObjectFull[]) => {
     const umap = new UMAP({
@@ -60,8 +62,10 @@ export default function Main() {
       const intersects = raycaster.intersectObjects(sprites);
 
       if (intersects.length > 0) {
-        const track = intersects[0].object.userData;
-        alert(`Track name: ${track.name} by ${track}`);
+        const track = intersects[0].object.userData as SpotifyApi.TrackObjectFull;
+        setCurrentlyPlayingTrack(track);
+
+        spotify.play({ uris: [track.uri] }).then(() => console.log("Playing track", track.name));
       }
     };
 
@@ -74,6 +78,8 @@ export default function Main() {
     };
 
     animate();
+
+    setLoading(false);
 
     return () => {
       window.removeEventListener("mouseup", onMouseUp);
@@ -103,5 +109,11 @@ export default function Main() {
     launchApp();
   }, []);
 
-  return <div ref={bodyRef}></div>;
+  return (
+    <div className="w-screen h-screen flex" ref={bodyRef} style={{ backgroundColor: "#090f13" }}>
+      <div className="w-11/12 h-40 flex rounded-md fixed inset-x-1/2 -translate-x-1/2 bottom-10" style={{ backgroundColor: "#30535F" }}>
+        {loading ? "loading your music..." : `loaded your music! ${currentlyPlayingTrack?.name} is currently playing.`}
+      </div>
+    </div>
+  );
 }

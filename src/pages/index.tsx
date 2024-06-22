@@ -11,10 +11,10 @@ export default function Login() {
   const login_url = `https://accounts.spotify.com/authorize?&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=token`;
 
   return (
-    <main className={`flex h-full w-full`}>
+    <div className={`h-screen w-screen bg-gray-700`}>
       <div className="btn" onClick={() => (window.location.href = login_url)}>
         Hello World
       </div>
-    </main>
+    </div>
   );
 }

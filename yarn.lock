@@ -375,6 +375,11 @@
   resolved "https://registry.npmjs.org/@types/seedrandom/-/seedrandom-2.4.27.tgz"
   integrity sha512-YvMLqFak/7rt//lPBtEHv3M4sRNA+HGxrhFZ+DQs9K2IkYJbNwVIb8avtJfhDiuaUBX/AW0jnjv48FV8h3u9bQ==
 
+"@types/spotify-web-playback-sdk@^0.1.12", "@types/spotify-web-playback-sdk@^0.1.19":
+  version "0.1.19"
+  resolved "https://registry.npmjs.org/@types/spotify-web-playback-sdk/-/spotify-web-playback-sdk-0.1.19.tgz"
+  integrity sha512-Is7x9gMIMoERxE0uvb2SPFQoy5OR7nO1B24CJiaDAUIdq195OLTQedN95XJQtxB2mfm+zi2j3LvEtpPdHKnB3w==
+
 "@types/stats.js@*":
   version "0.17.3"
   resolved "https://registry.npmjs.org/@types/stats.js/-/stats.js-0.17.3.tgz"
@@ -2938,7 +2943,14 @@ react-is@^16.13.1:
   resolved "https://registry.npmjs.org/react-is/-/react-is-16.13.1.tgz"
   integrity sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==
 
-"react@^16.8.0 || ^17.0.0 || ^18.0.0", react@^18, react@^18.2.0, react@^18.3.1, "react@>= 16.8.0 || 17.x.x || ^18.0.0-0":
+react-spotify-web-playback-sdk@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.npmjs.org/react-spotify-web-playback-sdk/-/react-spotify-web-playback-sdk-3.0.2.tgz"
+  integrity sha512-FqCgDEAZkNk6qJ80L38YyxIa0B/SBBaaStvKiYtf5CT+dVCMNEFhDDMUml2JQ7EIiuGraHNaae7Q6ZEmnv9vCA==
+  dependencies:
+    "@types/spotify-web-playback-sdk" "^0.1.12"
+
+"react@^16.8.0 || ^17.0.0 || ^18.0.0", react@^18, react@^18.2.0, react@^18.3.1, "react@>= 16.8.0 || 17.x.x || ^18.0.0-0", react@>=16.8.0:
   version "18.3.1"
   resolved "https://registry.npmjs.org/react/-/react-18.3.1.tgz"
   integrity sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==
