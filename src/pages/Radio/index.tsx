@@ -114,12 +114,42 @@ export default function Main() {
     };
   };
 
-  const playTrack = (track: SpotifyApi.TrackObjectFull, index: number) => {
+  const queueNextTrack = (currentTrackIndex: number) => {
+    const currentEmbedding = embeddings[currentTrackIndex];
+    let closestIndex: number | null = null;
+    let closestDistance = Infinity;
+
+    const lastFiveIndices = playedTrackIndices.slice(-5);
+
+    embeddings.forEach((embedding, index) => {
+      if (index !== currentTrackIndex && !lastFiveIndices.includes(index)) {
+        const distance = calculateDistance(currentEmbedding, embedding);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      }
+    });
+
+    if (closestIndex !== null) {
+      console.log(`Queueing next track index: ${closestIndex}`);
+      const nextTrack = allTracks[closestIndex];
+      spotify.queue(nextTrack.uri).then(() => {
+        console.log(`Queued track: ${nextTrack.name}`);
+      });
+    }
+  };
+
+  const playTrack = async (track: SpotifyApi.TrackObjectFull, index: number) => {
     console.log(`Playing track: ${track.name}, index: ${index}`);
     setCurrentlyPlayingTrack(track);
     setCurrentTrackIndex(index);
     setPlayedTrackIndices((prev) => [...prev, index]);
-    spotify.play({ uris: [track.uri] }).then(() => console.log("Playing track", track.name));
+    await spotify.play({ uris: [track.uri] });
+    console.log("Playing track", track.name);
+
+    // Find the next closest track and queue it
+    queueNextTrack(index);
   };
 
   const calculateDistance = (a: number[], b: number[]): number => {
@@ -182,6 +212,12 @@ export default function Main() {
 
     UMAPFITTING(normalised, allTracks);
   };
+
+  useEffect(() => {
+    if (currentlyPlayingTrack && currentTrackIndex !== null) {
+      queueNextTrack(currentTrackIndex);
+    }
+  }, [currentlyPlayingTrack]);
 
   useEffect(() => {
     launchApp();

@@ -22,7 +22,7 @@ export default async function getEveryAudioFeature(spotify: SpotifyWebApi.Spotif
           topPointer = everyTrack.length;
         }
         resolve();
-      }, 100);
+      }, 50);
     });
   }
 
