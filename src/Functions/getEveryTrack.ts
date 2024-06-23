@@ -29,7 +29,7 @@ export default async function getEveryTrack(spotify: SpotifyWebApi.SpotifyWebApi
 
           currentTrackCount += 100;
           resolve();
-        }, 50); // Delay between each batch
+        }, 100); // Delay between each batch
       });
     }
   }
