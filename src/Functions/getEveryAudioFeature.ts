@@ -1,5 +1,4 @@
 import SpotifyWebApi from "../spotify-web-api-js";
-import ApiError from "./ApiError";
 
 export default async function getEveryAudioFeature(spotify: SpotifyWebApi.SpotifyWebApiJs, everyTrack: SpotifyApi.TrackObjectFull[]) {
   let bottomPointer = 0;
@@ -8,35 +7,26 @@ export default async function getEveryAudioFeature(spotify: SpotifyWebApi.Spotif
 
   const ArrayOfTrackIDs = everyTrack.filter((eachTrack) => eachTrack !== null).map((eachTrack) => eachTrack.id);
 
-  try {
-    while (bottomPointer < everyTrack.length) {
-      await new Promise<void>((resolve) => {
-        setTimeout(async () => {
-          try {
-            const chunk = ArrayOfTrackIDs.slice(bottomPointer, topPointer);
-            const chunkOfAudioFeatures = await spotify.getAudioFeaturesForTracks(chunk);
+  while (bottomPointer < everyTrack.length) {
+    await new Promise<void>((resolve) => {
+      setTimeout(async () => {
+        const chunk = ArrayOfTrackIDs.slice(bottomPointer, topPointer);
 
-            audioFeatures.push(...chunkOfAudioFeatures.audio_features);
+        const chunkOfAudioFeatures = await spotify.getAudioFeaturesForTracks(chunk);
 
-            bottomPointer += 100;
-            topPointer += 100;
-            if (topPointer > everyTrack.length) {
-              topPointer = everyTrack.length;
-            }
-            resolve();
-          } catch (err) {
-            ApiError();
-            resolve(); // Resolve the promise to prevent the loop from being stuck
-          }
-        }, 50);
-      });
-    }
+        audioFeatures.push(...chunkOfAudioFeatures.audio_features);
 
-    const cleanAudioFeatures = audioFeatures.filter((eachAudioObject) => eachAudioObject !== null);
-
-    return cleanAudioFeatures;
-  } catch (err) {
-    ApiError();
-    return []; // Return an empty array or handle accordingly
+        bottomPointer += 100;
+        topPointer += 100;
+        if (topPointer > everyTrack.length) {
+          topPointer = everyTrack.length;
+        }
+        resolve();
+      }, 50);
+    });
   }
+
+  const cleanAudioFeatures = audioFeatures.filter((eachAudioObject) => eachAudioObject !== null);
+
+  return cleanAudioFeatures;
 }
