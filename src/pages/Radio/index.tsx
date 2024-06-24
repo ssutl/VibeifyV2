@@ -6,6 +6,11 @@ import getEveryAudioFeature from "../../Functions/getEveryAudioFeature";
 import normaliseAudioFeatures from "../../Functions/normaliseAudioFeatures";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
+import FastForwardRoundedIcon from "@mui/icons-material/FastForwardRounded";
+import FastRewindRoundedIcon from "@mui/icons-material/FastRewindRounded";
+import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
+const FastAverageColor = require("fast-average-color").FastAverageColor;
 
 export default function Main() {
   const spotify = new SpotifyWebApi();
@@ -16,8 +21,12 @@ export default function Main() {
   const [embeddings, setEmbeddings] = useState<number[][]>([]);
   const [allTracks, setAllTracks] = useState<SpotifyApi.TrackObjectFull[]>([]);
   const [playedTrackIndices, setPlayedTrackIndices] = useState<number[]>([]);
+  const [playing, setPlaying] = useState<boolean>(false);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
+  const [controlBarColor, setControlBarColor] = useState<string>("#333");
+
+  const fac = new FastAverageColor();
 
   // Fisher-Yates shuffle algorithm
   const shuffleArrays = (array1: any[], array2: any[]) => {
@@ -74,7 +83,12 @@ export default function Main() {
       return sprite;
     });
 
-    sprites.forEach((sprite) => scene.add(sprite));
+    sprites.forEach((sprite) => {
+      scene.add(sprite);
+      sprite.on("click", () => {
+        document.body.style.cursor = "pointer"; // change cursor on hover
+      });
+    });
     camera.position.z = 50;
 
     const raycaster = new THREE.Raycaster();
@@ -114,42 +128,21 @@ export default function Main() {
     };
   };
 
-  const queueNextTrack = (currentTrackIndex: number) => {
-    const currentEmbedding = embeddings[currentTrackIndex];
-    let closestIndex: number | null = null;
-    let closestDistance = Infinity;
-
-    const lastFiveIndices = playedTrackIndices.slice(-5);
-
-    embeddings.forEach((embedding, index) => {
-      if (index !== currentTrackIndex && !lastFiveIndices.includes(index)) {
-        const distance = calculateDistance(currentEmbedding, embedding);
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestIndex = index;
-        }
-      }
-    });
-
-    if (closestIndex !== null) {
-      console.log(`Queueing next track index: ${closestIndex}`);
-      const nextTrack = allTracks[closestIndex];
-      spotify.queue(nextTrack.uri).then(() => {
-        console.log(`Queued track: ${nextTrack.name}`);
-      });
-    }
-  };
-
   const playTrack = async (track: SpotifyApi.TrackObjectFull, index: number) => {
-    console.log(`Playing track: ${track.name}, index: ${index}`);
     setCurrentlyPlayingTrack(track);
     setCurrentTrackIndex(index);
     setPlayedTrackIndices((prev) => [...prev, index]);
+    setPlaying(true);
     await spotify.play({ uris: [track.uri] });
-    console.log("Playing track", track.name);
 
-    // Find the next closest track and queue it
-    queueNextTrack(index);
+    // Get the average color of the album cover and set it as the control bar color
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = track.album.images[0].url;
+    img.onload = () => {
+      const color = fac.getColor(img);
+      setControlBarColor(color.hex);
+    };
   };
 
   const calculateDistance = (a: number[], b: number[]): number => {
@@ -175,7 +168,6 @@ export default function Main() {
       });
 
       if (closestIndex !== null) {
-        console.log(`Next track index: ${closestIndex}`);
         const track = allTracks[closestIndex];
         playTrack(track, closestIndex);
       }
@@ -193,6 +185,12 @@ export default function Main() {
 
   const pauseTrack = () => {
     spotify.pause().then(() => console.log("Paused track"));
+    setPlaying(false);
+  };
+
+  const resumeTrack = () => {
+    spotify.play().then(() => console.log("Playing track"));
+    setPlaying(true);
   };
 
   const getTokenFromUrl = async () => {
@@ -214,35 +212,29 @@ export default function Main() {
   };
 
   useEffect(() => {
-    if (currentlyPlayingTrack && currentTrackIndex !== null) {
-      queueNextTrack(currentTrackIndex);
-    }
-  }, [currentlyPlayingTrack]);
-
-  useEffect(() => {
     launchApp();
   }, []);
 
   return (
     <div className="w-screen h-screen flex" ref={bodyRef}>
       {!loading && (
-        <div className="w-10/12 h-48 flex rounded-md fixed inset-x-1/2 -translate-x-1/2 bottom-10 p-4 bg-gray-800">
-          <div className="w-40 h-40 rounded-md">
-            <img src={currentlyPlayingTrack?.album.images[0].url} alt={currentlyPlayingTrack?.name} className="h-full w-full rounded-md" />
+        <div className="w-min h-48 flex rounded-md fixed left-10 bottom-10 p-4" style={{ backgroundColor: controlBarColor }}>
+          <div className="w-48 h-40 rounded-md overflow-hidden">
+            <img src={currentlyPlayingTrack?.album.images[0].url} alt={currentlyPlayingTrack?.name} className="h-full w-full rounded-md object-cover" />
           </div>
-          <div className="flex flex-col ml-4">
+          <div className="w-28 flex flex-col ml-4">
             <div className="text-white">{currentlyPlayingTrack?.name}</div>
             <div className="text-gray-400">{currentlyPlayingTrack?.artists.map((artist) => artist.name).join(", ")}</div>
+            <div className="flex items-center mt-4">
+              <FastRewindRoundedIcon onClick={previousTrack} className="text-white cursor-pointer text-xl" />
+              {playing ? (
+                <PauseRoundedIcon onClick={pauseTrack} className="text-white cursor-pointer text-3xl mx-2" />
+              ) : (
+                <PlayArrowRoundedIcon onClick={resumeTrack} className="text-white cursor-pointer text-3xl mx-2" />
+              )}
+              <FastForwardRoundedIcon onClick={nextTrack} className="text-white cursor-pointer text-xl" />
+            </div>
           </div>
-          <button onClick={previousTrack} className="w-1/4 h-full rounded-l-md">
-            Previous
-          </button>
-          <button onClick={pauseTrack} className="w-1/4 h-full">
-            Pause
-          </button>
-          <button onClick={nextTrack} className="w-1/4 h-full">
-            Next
-          </button>
         </div>
       )}
     </div>
