@@ -16,7 +16,7 @@ export default function Login() {
       <div className="max-w-prose px-4">
         <p className="text-center mb-4 text-base md:text-base">
           It maps the audio features of your Spotify playlists into a 3D space, allowing you to visualize which are similar and different. You can jump through them and skip to the most similar one.
-          The goal was to basically create a radio station, which just plays the next most similar song in your playlists, but it got long and the sun's out so tengo que ir a disfrutar.
+          The goal was to basically create a radio station, which just plays the next most similar song in your playlists, but it got long and the sun&apos;s out so tengo que ir a disfrutar.
         </p>
         <p className="text-center mb-4 hidden text-sm md:text-base md:block">Always HFWI and when you stop having fun with it stop.</p>
       </div>

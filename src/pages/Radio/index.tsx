@@ -111,9 +111,7 @@ export default function Main() {
     const animate = () => {
       requestAnimationFrame(animate);
       controls.update();
-      if (!controlsRef.current?.enabled) {
-        scene.rotation.y += 0.001;
-      }
+      scene.rotation.y += 0.001; // Slow rotation of the entire scene
       renderer.render(scene, camera);
     };
 
@@ -236,7 +234,10 @@ export default function Main() {
       )}
       {!loading && (
         <>
-          <div className="w-11/12 md:w-3/4 lg:w-1/2 flex flex-col md:flex-row items-center rounded-md fixed bottom-5 md:bottom-10 p-4 bg-opacity-0" style={{ backgroundColor: controlBarColor }}>
+          <div
+            className="w-11/12 md:w-1/3 lg:w-1/4 flex flex-col md:flex-row items-center rounded-md fixed left-5 bottom-5 p-4 bg-opacity-70 md:bg-opacity-100"
+            style={{ backgroundColor: controlBarColor }}
+          >
             {currentlyPlayingTrack ? (
               <>
                 <div className="w-full md:w-48 h-40 rounded-md overflow-hidden relative mb-4 md:mb-0">
