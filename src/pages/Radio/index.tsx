@@ -34,7 +34,6 @@ export default function Main() {
 
   const fac = new FastAverageColor();
 
-  // Fisher-Yates shuffle algorithm
   const shuffleArrays = (array1: any[], array2: any[]) => {
     for (let i = array1.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -51,10 +50,8 @@ export default function Main() {
     });
     const embeddings = await umap.fitAsync(data);
 
-    // Shuffle embeddings and tracks together
     shuffleArrays(embeddings, allTracks);
 
-    // Take a random 1000 after shuffle
     const selectedEmbeddings = embeddings.slice(0, 1000);
     const selectedTracks = allTracks.slice(0, 1000);
 
@@ -85,7 +82,7 @@ export default function Main() {
       const sprite = new THREE.Sprite(material);
       sprite.position.set(embedding[0] * 10, embedding[1] * 10, embedding[2] * 10);
       sprite.scale.set(1, 1, 1);
-      sprite.userData = { track, index }; // Store track info and index in userData
+      sprite.userData = { track, index };
       return sprite;
     });
 
@@ -115,7 +112,7 @@ export default function Main() {
       requestAnimationFrame(animate);
       controls.update();
       if (!controlsRef.current?.enabled) {
-        scene.rotation.y += 0.001; // Slow rotation
+        scene.rotation.y += 0.001;
       }
       renderer.render(scene, camera);
     };
@@ -157,7 +154,6 @@ export default function Main() {
     setPlaying(true);
     await spotify.play({ uris: [track.uri] });
 
-    // Get the average color of the album cover and set it as the control bar color
     const img = new Image();
     img.crossOrigin = "Anonymous";
     img.src = track.album.images[0].url;
@@ -166,7 +162,6 @@ export default function Main() {
       setControlBarColor(color.hex);
     };
 
-    // Queue the next closest track
     const currentEmbedding = embeddings[index];
     const nextClosestIndex = getNextClosestTrackIndex(currentEmbedding);
     if (nextClosestIndex !== null) {
@@ -190,7 +185,7 @@ export default function Main() {
     if (playedTrackIndices.length > 1) {
       const previousIndex = playedTrackIndices[playedTrackIndices.length - 2];
       const track = allTracks[previousIndex];
-      setPlayedTrackIndices((prev) => prev.slice(0, -1)); // Remove the last entry
+      setPlayedTrackIndices((prev) => prev.slice(0, -1));
       playTrack(track, previousIndex);
     }
   };
@@ -230,8 +225,8 @@ export default function Main() {
   return (
     <div className="w-screen h-screen flex justify-center items-center" ref={bodyRef}>
       {loading && (
-        <div className="fixed  w-1/3 flex flex-col items-center">
-          <p className="text-center mb-6 text-base leading-7">
+        <div className="fixed w-11/12 md:w-1/3 flex flex-col items-center">
+          <p className="text-center mb-6 text-sm md:text-base leading-7">
             Quick sumn I spun up at the start of summer 2024, rn it&apos;s 24/06/2024. Monday morning. Today I gotta run, do some muscle ups and go salsa class. There&apos;s a life to live uno. Got
             bored of this project so stopped here, still pretty wavy so check it out. When your hearts not in it, stop. Go where the love is and do what excites, always maintain reps tho. HFWI.
           </p>
@@ -241,10 +236,10 @@ export default function Main() {
       )}
       {!loading && (
         <>
-          <div className="w-min h-48 flex rounded-md fixed left-10 bottom-10 p-4" style={{ backgroundColor: controlBarColor }}>
+          <div className="w-11/12 md:w-3/4 lg:w-1/2 flex flex-col md:flex-row items-center rounded-md fixed bottom-5 md:bottom-10 p-4 bg-opacity-0" style={{ backgroundColor: controlBarColor }}>
             {currentlyPlayingTrack ? (
               <>
-                <div className="w-48 h-40 rounded-md overflow-hidden relative">
+                <div className="w-full md:w-48 h-40 rounded-md overflow-hidden relative mb-4 md:mb-0">
                   <Image1
                     src={currentlyPlayingTrack?.album.images[0].url}
                     fill={true}
@@ -254,9 +249,9 @@ export default function Main() {
                   />
                   <Image1 src={spotifyLogo} alt="Spotify Logo" width={100} height={20} className="absolute bottom-0 left-0" />
                 </div>
-                <div className="w-36 flex flex-col ml-4">
-                  <div className="text-white">{currentlyPlayingTrack?.name}</div>
-                  <div className="text-white text-opacity-65 truncate">{currentlyPlayingTrack?.artists.map((artist) => artist.name).join(", ")}</div>
+                <div className="w-full md:w-36 flex flex-col items-center md:items-start ml-0 md:ml-4">
+                  <div className="text-white text-center md:text-left">{currentlyPlayingTrack?.name}</div>
+                  <div className="text-white text-opacity-65 truncate text-center md:text-left">{currentlyPlayingTrack?.artists.map((artist) => artist.name).join(", ")}</div>
                   <div className="flex items-center mt-4">
                     <FastRewindRoundedIcon onClick={previousTrack} className="text-white cursor-pointer text-xl" />
                     {playing ? (
@@ -269,7 +264,7 @@ export default function Main() {
                 </div>
               </>
             ) : (
-              <div className="w-96 text-white">
+              <div className="w-full text-white text-center">
                 <p className="mb-4">Make sure Spotify is open on a device, then click a track to start radio sesh</p>
                 <p>
                   Queing works first time, but since Spotify doesn&apos;t allow for queues to be cleared, you&apos;ll have to manually clear the queue once you click another track. Unless you want to
@@ -280,7 +275,7 @@ export default function Main() {
           </div>
           <div className="absolute top-5 right-5">
             <p
-              className=" text-white font-normal cursor-pointer"
+              className="text-white font-normal cursor-pointer"
               onClick={() => {
                 const spotifyLogoutWindow = window.open(url, "Spotify Logout", "width=700,height=500,top=40,left=40");
                 setTimeout(() => spotifyLogoutWindow!.close(), 1000);
