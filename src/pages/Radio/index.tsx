@@ -9,7 +9,6 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import FastForwardRoundedIcon from "@mui/icons-material/FastForwardRounded";
 import FastRewindRoundedIcon from "@mui/icons-material/FastRewindRounded";
-import { redirect } from "next/navigation";
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 const FastAverageColor = require("fast-average-color").FastAverageColor;
 import { useRouter } from "next/navigation";
@@ -26,6 +25,7 @@ export default function Main() {
   const [allTracks, setAllTracks] = useState<SpotifyApi.TrackObjectFull[]>([]);
   const [playedTrackIndices, setPlayedTrackIndices] = useState<number[]>([]);
   const [playing, setPlaying] = useState<boolean>(false);
+  const [numTracks, setNumTracks] = useState<number>(1000);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const [controlBarColor, setControlBarColor] = useState<string>("#333");
@@ -33,6 +33,24 @@ export default function Main() {
   const router = useRouter();
 
   const fac = new FastAverageColor();
+
+  // Detect screen size and set number of tracks to render
+  useEffect(() => {
+    const updateNumTracks = () => {
+      if (window.innerWidth < 768) {
+        setNumTracks(500);
+      } else {
+        setNumTracks(1000);
+      }
+    };
+
+    window.addEventListener("resize", updateNumTracks);
+    updateNumTracks();
+
+    return () => {
+      window.removeEventListener("resize", updateNumTracks);
+    };
+  }, []);
 
   const shuffleArrays = (array1: any[], array2: any[]) => {
     for (let i = array1.length - 1; i > 0; i--) {
@@ -52,8 +70,8 @@ export default function Main() {
 
     shuffleArrays(embeddings, allTracks);
 
-    const selectedEmbeddings = embeddings.slice(0, 1000);
-    const selectedTracks = allTracks.slice(0, 1000);
+    const selectedEmbeddings = embeddings.slice(0, numTracks);
+    const selectedTracks = allTracks.slice(0, numTracks);
 
     setEmbeddings(selectedEmbeddings);
     setAllTracks(selectedTracks);
@@ -250,10 +268,10 @@ export default function Main() {
                   />
                   <Image1 src={spotifyLogo} alt="Spotify Logo" width={100} height={20} className="absolute bottom-0 left-0" />
                 </div>
-                <div className="w-full md:w-36 flex flex-col items-center md:items-start ml-0 md:ml-4">
-                  <div className="text-white text-center md:text-left">{currentlyPlayingTrack?.name}</div>
-                  <div className="text-white text-opacity-65 truncate text-center md:text-left">{currentlyPlayingTrack?.artists.map((artist) => artist.name).join(", ")}</div>
-                  <div className="flex items-center mt-4">
+                <div className="w-full md:w-32 flex flex-col items-center md:items-start ml-0 md:ml-4 md:h-40">
+                  <div className="text-white text-center md:text-left md:mb-2">{currentlyPlayingTrack?.name}</div>
+                  <div className="text-white text-opacity-65 truncate text-center md:text-left md:mb-4">{currentlyPlayingTrack?.artists.map((artist) => artist.name).join(", ")}</div>
+                  <div className="flex items-center mt-4 md:mt-0">
                     <FastRewindRoundedIcon onClick={previousTrack} className="text-white cursor-pointer text-xl" />
                     {playing ? (
                       <PauseRoundedIcon onClick={pauseTrack} className="text-white cursor-pointer text-3xl mx-2" />
