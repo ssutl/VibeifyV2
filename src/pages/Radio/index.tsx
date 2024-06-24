@@ -82,13 +82,6 @@ export default function Main() {
       sprite.userData = { track, index }; // Store track info and index in userData
       return sprite;
     });
-
-    sprites.forEach((sprite) => {
-      scene.add(sprite);
-      sprite.on("click", () => {
-        document.body.style.cursor = "pointer"; // change cursor on hover
-      });
-    });
     camera.position.z = 50;
 
     const raycaster = new THREE.Raycaster();
@@ -217,6 +210,7 @@ export default function Main() {
 
   return (
     <div className="w-screen h-screen flex" ref={bodyRef}>
+      {loading && <span className="loading loading-spinner loading-md fixed inset-x-1/2 -translate-x-1/2 inset-y-1/2"></span>}
       {!loading && (
         <div className="w-min h-48 flex rounded-md fixed left-10 bottom-10 p-4" style={{ backgroundColor: controlBarColor }}>
           <div className="w-48 h-40 rounded-md overflow-hidden">
