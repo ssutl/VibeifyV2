@@ -13,6 +13,8 @@ import { redirect } from "next/navigation";
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 const FastAverageColor = require("fast-average-color").FastAverageColor;
 import { useRouter } from "next/navigation";
+import spotifyLogo from "../../SpotifyLogo/green.png";
+import Image1 from "next/image";
 
 export default function Main() {
   const spotify = new SpotifyWebApi();
@@ -243,17 +245,18 @@ export default function Main() {
             {currentlyPlayingTrack ? (
               <>
                 <div className="w-48 h-40 rounded-md overflow-hidden relative">
-                  <img
+                  <Image1
                     src={currentlyPlayingTrack?.album.images[0].url}
+                    fill={true}
                     alt={currentlyPlayingTrack?.name}
-                    className="h-full w-full rounded-md object-cover"
+                    objectFit="cover"
                     onClick={() => window.open(currentlyPlayingTrack?.uri, "_blank")}
                   />
-                  <img src={require("../../SpotifyLogo/green.png")} className="absolute bottom-0 right-0 w-10 h-10" />
+                  <Image1 src={spotifyLogo} alt="Spotify Logo" width={100} height={20} className="absolute bottom-0 left-0" />
                 </div>
-                <div className="w-28 flex flex-col ml-4">
+                <div className="w-36 flex flex-col ml-4">
                   <div className="text-white">{currentlyPlayingTrack?.name}</div>
-                  <div className="text-gray-400">{currentlyPlayingTrack?.artists.map((artist) => artist.name).join(", ")}</div>
+                  <div className="text-white text-opacity-65 truncate">{currentlyPlayingTrack?.artists.map((artist) => artist.name).join(", ")}</div>
                   <div className="flex items-center mt-4">
                     <FastRewindRoundedIcon onClick={previousTrack} className="text-white cursor-pointer text-xl" />
                     {playing ? (
