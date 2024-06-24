@@ -15,10 +15,6 @@ export default function Login() {
       <h1 className="text-4xl font-bold mb-4">PROJECT 30</h1>
       <div className="max-w-prose">
         <p className="text-center mb-4">
-          Quick sumn I spun up at the start of summer 2024, rn it&apos;s 24/06/2024. Monday morning. Today I gotta run, do some muscle ups and go salsa class. There&apos;s a life to live uno. Got
-          bored of this project so stopped here, still pretty wave so check it out.
-        </p>
-        <p className="text-center mb-4">
           It maps the audio features of your Spotify playlists into a 3D space, allowing you to visualise which are similar and different. You can jump through them and skip to the most similiar one.
           The goal was to basically create a radio station, which just plays the next most similiar song in your playlists, but it got long and the suns out so tengo que ir a disfrutar.
         </p>

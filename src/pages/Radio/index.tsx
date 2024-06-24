@@ -9,8 +9,10 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import FastForwardRoundedIcon from "@mui/icons-material/FastForwardRounded";
 import FastRewindRoundedIcon from "@mui/icons-material/FastRewindRounded";
+import { redirect } from "next/navigation";
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 const FastAverageColor = require("fast-average-color").FastAverageColor;
+import { useRouter } from "next/navigation";
 
 export default function Main() {
   const spotify = new SpotifyWebApi();
@@ -25,6 +27,8 @@ export default function Main() {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const [controlBarColor, setControlBarColor] = useState<string>("#333");
+  const url = "https://accounts.spotify.com/en/logout";
+  const router = useRouter();
 
   const fac = new FastAverageColor();
 
@@ -82,6 +86,8 @@ export default function Main() {
       sprite.userData = { track, index }; // Store track info and index in userData
       return sprite;
     });
+
+    sprites.forEach((sprite) => scene.add(sprite));
     camera.position.z = 50;
 
     const raycaster = new THREE.Raycaster();
@@ -121,6 +127,27 @@ export default function Main() {
     };
   };
 
+  const calculateDistance = (a: number[], b: number[]): number => {
+    return Math.sqrt(a.reduce((sum, val, i) => sum + Math.pow(val - b[i], 2), 0));
+  };
+
+  const getNextClosestTrackIndex = (currentEmbedding: number[]): number | null => {
+    let closestIndex: number | null = null;
+    let closestDistance = Infinity;
+
+    embeddings.forEach((embedding, index) => {
+      if (index !== currentTrackIndex) {
+        const distance = calculateDistance(currentEmbedding, embedding);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      }
+    });
+
+    return closestIndex;
+  };
+
   const playTrack = async (track: SpotifyApi.TrackObjectFull, index: number) => {
     setCurrentlyPlayingTrack(track);
     setCurrentTrackIndex(index);
@@ -136,33 +163,23 @@ export default function Main() {
       const color = fac.getColor(img);
       setControlBarColor(color.hex);
     };
-  };
 
-  const calculateDistance = (a: number[], b: number[]): number => {
-    return Math.sqrt(a.reduce((sum, val, i) => sum + Math.pow(val - b[i], 2), 0));
+    // Queue the next closest track
+    const currentEmbedding = embeddings[index];
+    const nextClosestIndex = getNextClosestTrackIndex(currentEmbedding);
+    if (nextClosestIndex !== null) {
+      await spotify.queue(allTracks[nextClosestIndex].uri);
+    }
   };
 
   const nextTrack = () => {
     if (currentTrackIndex !== null) {
       const currentEmbedding = embeddings[currentTrackIndex];
-      let closestIndex: number | null = null;
-      let closestDistance = Infinity;
+      const nextClosestIndex = getNextClosestTrackIndex(currentEmbedding);
 
-      const lastFiveIndices = playedTrackIndices.slice(-5);
-
-      embeddings.forEach((embedding, index) => {
-        if (index !== currentTrackIndex && !lastFiveIndices.includes(index)) {
-          const distance = calculateDistance(currentEmbedding, embedding);
-          if (distance < closestDistance) {
-            closestDistance = distance;
-            closestIndex = index;
-          }
-        }
-      });
-
-      if (closestIndex !== null) {
-        const track = allTracks[closestIndex];
-        playTrack(track, closestIndex);
+      if (nextClosestIndex !== null) {
+        const track = allTracks[nextClosestIndex];
+        playTrack(track, nextClosestIndex);
       }
     }
   };
@@ -209,27 +226,68 @@ export default function Main() {
   }, []);
 
   return (
-    <div className="w-screen h-screen flex" ref={bodyRef}>
-      {loading && <span className="loading loading-spinner loading-md fixed inset-x-1/2 -translate-x-1/2 inset-y-1/2"></span>}
-      {!loading && (
-        <div className="w-min h-48 flex rounded-md fixed left-10 bottom-10 p-4" style={{ backgroundColor: controlBarColor }}>
-          <div className="w-48 h-40 rounded-md overflow-hidden">
-            <img src={currentlyPlayingTrack?.album.images[0].url} alt={currentlyPlayingTrack?.name} className="h-full w-full rounded-md object-cover" />
-          </div>
-          <div className="w-28 flex flex-col ml-4">
-            <div className="text-white">{currentlyPlayingTrack?.name}</div>
-            <div className="text-gray-400">{currentlyPlayingTrack?.artists.map((artist) => artist.name).join(", ")}</div>
-            <div className="flex items-center mt-4">
-              <FastRewindRoundedIcon onClick={previousTrack} className="text-white cursor-pointer text-xl" />
-              {playing ? (
-                <PauseRoundedIcon onClick={pauseTrack} className="text-white cursor-pointer text-3xl mx-2" />
-              ) : (
-                <PlayArrowRoundedIcon onClick={resumeTrack} className="text-white cursor-pointer text-3xl mx-2" />
-              )}
-              <FastForwardRoundedIcon onClick={nextTrack} className="text-white cursor-pointer text-xl" />
-            </div>
-          </div>
+    <div className="w-screen h-screen flex justify-center items-center" ref={bodyRef}>
+      {loading && (
+        <div className="fixed  w-1/3 flex flex-col items-center">
+          <p className="text-center mb-6 text-base leading-7">
+            Quick sumn I spun up at the start of summer 2024, rn it&apos;s 24/06/2024. Monday morning. Today I gotta run, do some muscle ups and go salsa class. There&apos;s a life to live uno. Got
+            bored of this project so stopped here, still pretty wavy so check it out. When your hearts not in it, stop. Go where the love is and do what excites, always maintain reps tho. HFWI.
+          </p>
+          <span className="loading loading-spinner loading-md mb-6 "></span>
+          <p>Might take a second, if you have a lot of tracks in your library, be patient.</p>
         </div>
+      )}
+      {!loading && (
+        <>
+          <div className="w-min h-48 flex rounded-md fixed left-10 bottom-10 p-4" style={{ backgroundColor: controlBarColor }}>
+            {currentlyPlayingTrack ? (
+              <>
+                <div className="w-48 h-40 rounded-md overflow-hidden relative">
+                  <img
+                    src={currentlyPlayingTrack?.album.images[0].url}
+                    alt={currentlyPlayingTrack?.name}
+                    className="h-full w-full rounded-md object-cover"
+                    onClick={() => window.open(currentlyPlayingTrack?.uri, "_blank")}
+                  />
+                  <img src={require("../../SpotifyLogo/green.png")} className="absolute bottom-0 right-0 w-10 h-10" />
+                </div>
+                <div className="w-28 flex flex-col ml-4">
+                  <div className="text-white">{currentlyPlayingTrack?.name}</div>
+                  <div className="text-gray-400">{currentlyPlayingTrack?.artists.map((artist) => artist.name).join(", ")}</div>
+                  <div className="flex items-center mt-4">
+                    <FastRewindRoundedIcon onClick={previousTrack} className="text-white cursor-pointer text-xl" />
+                    {playing ? (
+                      <PauseRoundedIcon onClick={pauseTrack} className="text-white cursor-pointer text-3xl mx-2" />
+                    ) : (
+                      <PlayArrowRoundedIcon onClick={resumeTrack} className="text-white cursor-pointer text-3xl mx-2" />
+                    )}
+                    <FastForwardRoundedIcon onClick={nextTrack} className="text-white cursor-pointer text-xl" />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="w-96 text-white">
+                <p className="mb-4">Make sure Spotify is open on a device, then click a track to start radio sesh</p>
+                <p>
+                  Queing works first time, but since Spotify doesn&apos;t allow for queues to be cleared, you&apos;ll have to manually clear the queue once you click another track. Unless you want to
+                  keep clicking next track. LONG.
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="absolute top-5 right-5">
+            <p
+              className=" text-white font-normal cursor-pointer"
+              onClick={() => {
+                const spotifyLogoutWindow = window.open(url, "Spotify Logout", "width=700,height=500,top=40,left=40");
+                setTimeout(() => spotifyLogoutWindow!.close(), 1000);
+                router.push("/");
+              }}
+            >
+              Logout Project 30
+            </p>
+          </div>
+        </>
       )}
     </div>
   );
