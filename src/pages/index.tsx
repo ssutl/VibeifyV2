@@ -23,18 +23,6 @@ export default function Login() {
       <div className="bg-green-500 text-white font-bold py-2 px-4 rounded-full cursor-pointer mb-4" onClick={() => (window.location.href = login_url)}>
         Log In With Spotify
       </div>
-      <h1 className="text-xl md:text-2xl font-bold mb-4 text-center">Privacy Policy</h1>
-      <div className="max-w-prose px-4">
-        <p className="text-center text-xs md:text-sm">
-          By choosing to use this app, you agree to the use of your Spotify account username and data in order to analyse each of your saved playlists. None of the data used by Vibeify is stored or
-          collected anywhere, and it is NOT shared with any third parties. All information is used solely for creating tailored playlists. You can rest assured that your data is not being stored or
-          used maliciously, however, if you would like to revoke PROJECT 30 permissions, you can visit your apps page and click &quot;REMOVE ACCESS&quot; on Vibeify.{" "}
-          <a target="_blank" href="https://support.spotify.com/us/article/spotify-on-other-apps/" className="text-green-400 underline">
-            Here
-          </a>{" "}
-          is a more detailed guide for doing so.
-        </p>
-      </div>
     </div>
   );
 }
