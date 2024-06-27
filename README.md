@@ -1,6 +1,11 @@
 # VibeifyV2 
 Mapping out your Spotify tracks into 3-dimensional domain, creating a visualization of the spread of the vibes in your playlists. Using dimension reduction to reduce the large audio features of each track into x, y, and z coordinates and plotting them using Three.js.
 
+
+
+Uploading ProjectVideoShortened.mp4…
+
+
 ## Technologies Used
 ### Frontend
 1. Next.js
