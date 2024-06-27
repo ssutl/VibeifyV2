@@ -1,37 +1,36 @@
 # VibeifyV2 
 Mapping out your Spotify tracks into 3-dimensional domain, creating a visualisation of the spread of the vibes in your playlists. Using dimension reduction to reduce the large audio features of each track into x,y and z coordinates and plotting them using three.JS.
 
-![image](https://user-images.githubusercontent.com/76885270/230965118-bbc7cb8e-41d8-4c2a-9e99-0a2fee1187a8.png)
+
 
 # Technologies Used
 ### Frontend
 1. Next.js
-2. Sass
-
-
-
-https://github.com/ssutl/vibeify_v2/assets/76885270/ff1e98ab-7ae0-4a65-8674-26e7005b3bbe
-
+2. Tailwind
+3. Three,js
 
 ### API
-1. Whisper-I OpenAI model
-2. GPT-3.5 OpenAI model
-
+1. Spotify API
+   
 # Features Implemented
-1. Transcribing videos
-2. Summarising transcription
-3. Local storage of current transcriptions
+1. UMAP - Dimensionality reductions
 
 # How it works
-Fetch requeests are used in order to download the video from the provided video URL, and these videos are saved locally. These files are then passed into OpenAI's whisper-1 model, which then transcribes the video. Then finally we use GPT-3.5 turbo in order to summarise the transcript. Depending on the the amount of inputs we will loop this process for each link.
+Using the SpotifyAPI to grab users tracks, and all related audio features. Embeddings are created from the audio features for each track. The embeddings represent a sprite which have the track album cover as their material.
 
 
 # How to run application<br/>
 ### Setup
-1. Create an `.env.local` file in the root directory
-2. Add NEXT_PUBLIC_OPENAPI_KEY={Your OPENAI secret key} to the `.env.local` - This key can be generated through the OpenAI's developer accounts
+1.Go to the (spotify developer dashboard)[https://developer.spotify.com/dashboard] and create a new app, ensure the redirect URI is `http://localhost:3000/Radio/`
+2. You can access your Client ID here
+3. Create an `.env.local` file in the root directory
+4. Add `NEXT_PUBLIC_SPOTIFY_CLIENT_ID=Your spotify app key`
+5. Add `NEXT_PUBLIC_SPOTIFY_SCOPE==user-read-private user-read-email user-library-read playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private user-modify-playback-state user-read-currently-playing user-read-playback-state user-read-recently-played`
+6. Add `NEXT_PUBLIC_SPOTIFY_REDIRECT=http://localhost:3000/Radio/`
 
-![image](https://user-images.githubusercontent.com/76885270/230969083-899859e9-b4b1-4007-93db-db632aa9a1b6.png)
+![image](https://github.com/ssutl/vibeify_v2/assets/76885270/73411b9f-dfa9-428f-a4bb-72ab0c69d0c7)
+
+
 
 ### Frontend
 1. `Run NPM I` (to install needed dependencies)
