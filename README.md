@@ -28,8 +28,10 @@ Using the SpotifyAPI to grab users' tracks, and all related audio features. Embe
 5. Add `NEXT_PUBLIC_SPOTIFY_SCOPE=user-read-private user-read-email user-library-read playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private user-modify-playback-state user-read-currently-playing user-read-playback-state user-read-recently-played`
 6. Add `NEXT_PUBLIC_SPOTIFY_REDIRECT=http://localhost:3000/Radio/`
 
+![image](https://github.com/ssutl/vibeify_v2/assets/76885270/73411b9f-dfa9-428f-a4bb-72ab0c69d0c7)
+
 ### Frontend
 1. `Run npm i` (to install needed dependencies)
 2. `npm run dev`
 
-![image](https://github.com/ssutl/vibeify_v2/assets/76885270/73411b9f-dfa9-428f-a4bb-72ab0c69d0c7)
+
